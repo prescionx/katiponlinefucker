@@ -403,6 +403,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <span style="font-size:11px; color:rgba(255,255,255,0.5);">Hedef Kelime Sayısı</span>
                         <input type="number" id="word-limit-input" min="10" max="1500" value="${config.wordLimit}" 
+                            aria-label="Hedef Kelime Sayısı"
                             style="font-size:12px; color:#ffffff; font-weight:600; background:rgba(255,255,255,0.1); 
                             padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.2); 
                             width:80px; text-align:center;">
@@ -427,6 +428,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                     <label style="font-size:12px; color:rgba(255,255,255,0.6); font-weight:500;">Yazma Hızı</label>
                     <input type="number" id="speed-input" min="1" max="300" value="${config.delay}" 
+                        aria-label="Yazma Hızı"
                         style="font-size:12px; color:#ffffff; font-weight:600; background:rgba(255,255,255,0.1); 
                         padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.2); 
                         width:70px; text-align:center;">
@@ -556,10 +558,11 @@
         // Typing speed input olayı
         speedInput.oninput = function() {
             let value = parseInt(this.value);
-            if (value < 1) value = 1;
+            if (isNaN(value) || value < 1) value = 1;
             if (value > 300) value = 300;
             config.delay = value;
             slider.value = value;
+            this.value = value;
             localStorage.setItem('katip-speed', value);
         };
 
@@ -587,10 +590,11 @@
         // Word limit input olayı
         wordLimitInput.oninput = function() {
             let value = parseInt(this.value);
-            if (value < 10) value = 10;
+            if (isNaN(value) || value < 10) value = 10;
             if (value > 1500) value = 1500;
             config.wordLimit = value;
             wordLimitSlider.value = value;
+            this.value = value;
             localStorage.setItem('katip-word-limit', value);
             updateStatsDisplay();
         };
