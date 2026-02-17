@@ -740,6 +740,16 @@
                     </div>
                 </div>
 
+                <!-- Compact Speed Slider -->
+                <div style="display: flex; flex-direction: column; justify-content: center; margin: 0 8px; min-width: 100px;">
+                     <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-size: 9px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase;">⚡ Hız</span>
+                        <span id="compact-speed-val" style="font-size: 9px; color: rgba(255,255,255,0.8); font-weight: 600;">${config.delay}ms</span>
+                     </div>
+                     <input type="range" id="compact-slider" min="1" max="300" step="1" value="${config.delay}"
+                        style="width: 100%; height: 4px; border-radius: 2px; -webkit-appearance: none; background: rgba(255,255,255,0.2); cursor: pointer;">
+                </div>
+
                 <!-- Right: Controls -->
                 <div style="display:flex; gap:8px; align-items:center; flex-shrink: 0;">
                     <span id="btn-settings" title="Ayarlar" style="cursor:pointer; color:rgba(255,255,255,0.6); font-size:18px; transition:all 0.2s; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px;">⚙️</span>
@@ -893,26 +903,23 @@
 
         Object.assign(panel.style, {
             position: 'fixed',
-            bottom: '0',
-            left: '0',
-            right: '0',
-            width: '100%',
             height: 'auto',
             background: 'rgba(28, 28, 30, 0.95)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             color: 'white',
             padding: '12px 0',
-            borderRadius: '12px 12px 0 0',
             zIndex: '999999',
             border: '1px solid rgba(255,255,255,0.1)',
-            borderBottom: 'none',
             fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
             boxShadow: '0 -8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             display: config.panelMinimized ? 'none' : 'block',
             overflow: 'visible'
         });
+
+        // Set initial mode
+        panel.classList.add('compact-mode');
         
         // No need to add extra padding to main panel as it's already in the HTML
         const mainPanel = panel.querySelector('#main-panel');
@@ -930,19 +937,15 @@
             transform: 'translateX(-50%)',
             width: '60px',
             height: '60px',
-            background: 'rgba(28, 28, 30, 0.95)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            border: '3px solid transparent',
+            background: 'transparent', // CSS handles background via pseudo-elements
             borderRadius: '50%',
             display: config.panelMinimized ? 'flex' : 'none',
             justifyContent: 'center',
             alignItems: 'center',
             cursor: 'pointer',
             zIndex: '999999',
-            boxShadow: '0 0 30px rgba(0,122,255,0.5), 0 8px 24px rgba(0,0,0,0.3)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            animation: 'kf-rainbow-glow 3s linear infinite'
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         });
 
         document.body.appendChild(panel);
@@ -957,8 +960,20 @@
         
         function updateBodyPadding() {
             if (!config.panelMinimized && panel.style.display !== 'none') {
-                const panelHeight = panel.offsetHeight;
-                document.documentElement.style.setProperty('--katip-panel-height', `${panelHeight}px`);
+                let totalSpace = panel.offsetHeight;
+
+                // Add settings panel height if open
+                if (settingsPanel.style.opacity === '1') {
+                    totalSpace += settingsPanel.offsetHeight;
+                }
+
+                const isCompact = panel.classList.contains('compact-mode');
+                // Add 20px gap for compact mode
+                if (isCompact) {
+                    totalSpace += 20;
+                }
+
+                document.documentElement.style.setProperty('--katip-panel-height', `${totalSpace}px`);
                 document.body.classList.add('katip-panel-open');
             } else {
                 document.body.classList.remove('katip-panel-open');
@@ -967,15 +982,17 @@
         
         document.getElementById('btn-settings').onclick = () => {
             if (settingsPanel.style.opacity === '1') {
-                // Close settings panel
+                // Close settings panel -> Compact Mode
                 settingsPanel.style.opacity = '0';
                 settingsPanel.style.pointerEvents = 'none';
-                panel.style.borderRadius = '12px 12px 0 0';
+                panel.classList.remove('full-mode');
+                panel.classList.add('compact-mode');
             } else {
-                // Open settings panel - remove rounded corners from main panel
+                // Open settings panel -> Full Mode
                 settingsPanel.style.opacity = '1';
                 settingsPanel.style.pointerEvents = 'auto';
-                panel.style.borderRadius = '0';
+                panel.classList.remove('compact-mode');
+                panel.classList.add('full-mode');
             }
             setTimeout(updateBodyPadding, DOM_UPDATE_DELAY);
         };
@@ -983,7 +1000,8 @@
         document.getElementById('btn-close-settings').onclick = () => {
             settingsPanel.style.opacity = '0';
             settingsPanel.style.pointerEvents = 'none';
-            panel.style.borderRadius = '12px 12px 0 0';
+            panel.classList.remove('full-mode');
+            panel.classList.add('compact-mode');
             setTimeout(updateBodyPadding, DOM_UPDATE_DELAY);
         };
         
@@ -1048,29 +1066,44 @@
 
         // Slider olayı
         const slider = document.getElementById('bot-slider');
+        const compactSlider = document.getElementById('compact-slider');
         const speedInput = document.getElementById('speed-input');
+        const compactSpeedVal = document.getElementById('compact-speed-val');
         
-        slider.oninput = function() {
-            config.delay = parseInt(this.value);
-            speedInput.value = this.value;
-            localStorage.setItem('katip-speed', this.value);
-            // Anlık tahmini güncelle
-            stats.estimatedWPM = calculateEstimatedWPM();
-            updateStatsDisplay();
-        };
-        
-        speedInput.oninput = function() {
-            let value = parseInt(this.value);
-            if (isNaN(value) || value < 1) value = 1;
-            if (value > 300) value = 300;
-            this.value = value;
+        function updateSpeed(val) {
+            const value = parseInt(val);
+            if (isNaN(value)) return;
+
             config.delay = value;
-            slider.value = value;
             localStorage.setItem('katip-speed', value);
+
+            // Sync all inputs
+            if (slider) slider.value = value;
+            if (compactSlider) compactSlider.value = value;
+            if (speedInput) speedInput.value = value;
+            if (compactSpeedVal) compactSpeedVal.innerText = value + 'ms';
+
             // Anlık tahmini güncelle
             stats.estimatedWPM = calculateEstimatedWPM();
             updateStatsDisplay();
-        };
+        }
+
+        if (slider) {
+            slider.oninput = function() { updateSpeed(this.value); };
+        }
+
+        if (compactSlider) {
+            compactSlider.oninput = function() { updateSpeed(this.value); };
+        }
+
+        if (speedInput) {
+            speedInput.oninput = function() {
+                let value = parseInt(this.value);
+                if (value < 1) value = 1;
+                if (value > 300) value = 300;
+                updateSpeed(value);
+            };
+        }
 
         // Word limit toggle olayı
         const wordLimitToggle = document.getElementById('word-limit-toggle');
@@ -1210,37 +1243,32 @@
                 }
             }
             
-            @keyframes kf-rainbow-glow {
-                0% {
-                    border-color: #ff0000;
-                    box-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 60px #ff0000, 0 8px 24px rgba(0,0,0,0.3);
-                }
-                16% {
-                    border-color: #ff7f00;
-                    box-shadow: 0 0 20px #ff7f00, 0 0 40px #ff7f00, 0 0 60px #ff7f00, 0 8px 24px rgba(0,0,0,0.3);
-                }
-                33% {
-                    border-color: #ffff00;
-                    box-shadow: 0 0 20px #ffff00, 0 0 40px #ffff00, 0 0 60px #ffff00, 0 8px 24px rgba(0,0,0,0.3);
-                }
-                50% {
-                    border-color: #00ff00;
-                    box-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00, 0 0 60px #00ff00, 0 8px 24px rgba(0,0,0,0.3);
-                }
-                66% {
-                    border-color: #0000ff;
-                    box-shadow: 0 0 20px #0000ff, 0 0 40px #0000ff, 0 0 60px #0000ff, 0 8px 24px rgba(0,0,0,0.3);
-                }
-                83% {
-                    border-color: #4b0082;
-                    box-shadow: 0 0 20px #4b0082, 0 0 40px #4b0082, 0 0 60px #4b0082, 0 8px 24px rgba(0,0,0,0.3);
-                }
-                100% {
-                    border-color: #ff0000;
-                    box-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 60px #ff0000, 0 8px 24px rgba(0,0,0,0.3);
-                }
+            #katip-icon::before {
+                content: '';
+                position: absolute;
+                inset: -3px;
+                border-radius: 50%;
+                background: conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #ff0000);
+                z-index: -2;
+                animation: kf-spin 2s linear infinite;
+                filter: blur(2px);
             }
             
+            #katip-icon::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: rgba(28, 28, 30, 0.95);
+                border-radius: 50%;
+                z-index: -1;
+                backdrop-filter: blur(20px) saturate(180%);
+                -webkit-backdrop-filter: blur(20px) saturate(180%);
+            }
+
+            @keyframes kf-spin {
+                100% { transform: rotate(360deg); }
+            }
+
             @keyframes flash-red {
                 0%, 100% {
                     color: #ff3b30;
@@ -1312,7 +1340,7 @@
                 opacity: 0.9;
             }
             
-            #bot-slider::-webkit-slider-thumb {
+            #bot-slider::-webkit-slider-thumb, #compact-slider::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 appearance: none;
                 width: 18px;
@@ -1323,11 +1351,11 @@
                 box-shadow: 0 2px 8px rgba(0,122,255,0.4);
                 transition: all 0.2s;
             }
-            #bot-slider::-webkit-slider-thumb:hover {
+            #bot-slider::-webkit-slider-thumb:hover, #compact-slider::-webkit-slider-thumb:hover {
                 transform: scale(1.2);
                 box-shadow: 0 4px 12px rgba(0,122,255,0.6);
             }
-            #bot-slider::-moz-range-thumb {
+            #bot-slider::-moz-range-thumb, #compact-slider::-moz-range-thumb {
                 width: 18px;
                 height: 18px;
                 border-radius: 50%;
@@ -1337,7 +1365,7 @@
                 box-shadow: 0 2px 8px rgba(0,122,255,0.4);
                 transition: all 0.2s;
             }
-            #bot-slider::-moz-range-thumb:hover {
+            #bot-slider::-moz-range-thumb:hover, #compact-slider::-moz-range-thumb:hover {
                 transform: scale(1.2);
                 box-shadow: 0 4px 12px rgba(0,122,255,0.6);
             }
@@ -1407,6 +1435,28 @@
             /* Push content up when panel is visible */
             body.katip-panel-open {
                 padding-bottom: var(--katip-panel-height, 0px);
+            }
+
+            /* Modes */
+            .compact-mode {
+                width: auto;
+                min-width: 400px;
+                max-width: 90%;
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 20px;
+                border-radius: 16px;
+                right: auto;
+            }
+
+            .full-mode {
+                width: 100%;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                transform: none;
+                border-radius: 12px 12px 0 0;
+                border-bottom: none;
             }
         `;
         document.head.appendChild(style);
