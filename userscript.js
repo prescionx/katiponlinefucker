@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         <<KatipOnlineFucker>>
 // @namespace    http://tampermonkey.net/
-// @version      v2.0
+// @version      v2.1
 // @description  Katiponline sitesi için oluşturulan robotize yazım scripti.
 // @author       PrescionX
 // @match        *://*.katiponline.xyz/*
@@ -402,9 +402,12 @@
                 <div id="word-limit-controls" style="display:${config.wordLimitEnabled ? 'block' : 'none'};">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                         <span style="font-size:11px; color:rgba(255,255,255,0.5);">Hedef Kelime Sayısı</span>
-                        <span id="word-limit-val" style="font-size:12px; color:#ffffff; font-weight:600; background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:6px;">${config.wordLimit} kelime</span>
+                        <input type="number" id="word-limit-input" min="10" max="1500" value="${config.wordLimit}" 
+                            style="font-size:12px; color:#ffffff; font-weight:600; background:rgba(255,255,255,0.1); 
+                            padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.2); 
+                            width:80px; text-align:center;">
                     </div>
-                    <input type="range" id="word-limit-slider" min="10" max="500" step="10" value="${config.wordLimit}" 
+                    <input type="range" id="word-limit-slider" min="10" max="1500" step="10" value="${config.wordLimit}" 
                         style="width:100%; height:6px; border-radius:3px; outline:none; -webkit-appearance:none; 
                         background:rgba(255,255,255,0.1); cursor:pointer; margin-bottom:8px;">
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -423,9 +426,12 @@
             <div style="margin-bottom:16px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                     <label style="font-size:12px; color:rgba(255,255,255,0.6); font-weight:500;">Yazma Hızı</label>
-                    <span id="speed-val" style="font-size:12px; color:#ffffff; font-weight:600; background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:6px;">${config.delay}ms</span>
+                    <input type="number" id="speed-input" min="1" max="300" value="${config.delay}" 
+                        style="font-size:12px; color:#ffffff; font-weight:600; background:rgba(255,255,255,0.1); 
+                        padding:4px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.2); 
+                        width:70px; text-align:center;">
                 </div>
-                <input type="range" id="bot-slider" min="10" max="300" step="10" value="${config.delay}" 
+                <input type="range" id="bot-slider" min="1" max="300" step="1" value="${config.delay}" 
                     style="width:100%; height:6px; border-radius:3px; outline:none; -webkit-appearance:none; 
                     background:rgba(255,255,255,0.1); cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; margin-top:4px;">
@@ -537,12 +543,24 @@
             mainBtn.style.boxShadow = '0 4px 12px rgba(0,122,255,0.3)';
         };
 
-        // Slider olayı
+        // Typing speed slider olayı
         const slider = document.getElementById('bot-slider');
+        const speedInput = document.getElementById('speed-input');
+        
         slider.oninput = function() {
             config.delay = parseInt(this.value);
-            document.getElementById('speed-val').innerText = this.value + "ms";
+            speedInput.value = this.value;
             localStorage.setItem('katip-speed', this.value);
+        };
+        
+        // Typing speed input olayı
+        speedInput.oninput = function() {
+            let value = parseInt(this.value);
+            if (value < 1) value = 1;
+            if (value > 300) value = 300;
+            config.delay = value;
+            slider.value = value;
+            localStorage.setItem('katip-speed', value);
         };
 
         // Word limit toggle olayı
@@ -557,10 +575,23 @@
 
         // Word limit slider olayı
         const wordLimitSlider = document.getElementById('word-limit-slider');
+        const wordLimitInput = document.getElementById('word-limit-input');
+        
         wordLimitSlider.oninput = function() {
             config.wordLimit = parseInt(this.value);
-            document.getElementById('word-limit-val').innerText = this.value + " kelime";
+            wordLimitInput.value = this.value;
             localStorage.setItem('katip-word-limit', this.value);
+            updateStatsDisplay();
+        };
+        
+        // Word limit input olayı
+        wordLimitInput.oninput = function() {
+            let value = parseInt(this.value);
+            if (value < 10) value = 10;
+            if (value > 1500) value = 1500;
+            config.wordLimit = value;
+            wordLimitSlider.value = value;
+            localStorage.setItem('katip-word-limit', value);
             updateStatsDisplay();
         };
 
